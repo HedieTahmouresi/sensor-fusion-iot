@@ -7,21 +7,37 @@ dt = 0.1
 total_time = 20.0    
 steps = int(total_time / dt)
 
-true_velocity = np.array([1.5, 1.0])  
+true_velocity = np.array([1.5, 1.0])
 start_pos = np.array([0.0, 0.0])
 
 sigma_1 = 2.0 
 
 sigma_2 = 1.0 
 
-def simulate_ground_truth(steps, dt, start_pos, velocity):
+def simulate_ground_truth(steps, dt, start_pos, mode = "L"):
 
     truth_data = np.zeros((steps, 2))
-    
     current_pos = start_pos.copy()
     
+    vel_east = np.array([1.5, 0.0]) 
+    vel_north = np.array([0.0, 1.5]) 
+
+    if mode == "I":
+        vel_east = true_velocity
+        vel_north = true_velocity  
+    
+    turn_step = steps // 2 
+    
+    print(f"Simulating Turn at step {turn_step} ({turn_step * dt} seconds)")
+
     for k in range(steps):
         truth_data[k] = current_pos
+        
+        if k < turn_step:
+            velocity = vel_east
+        else:
+            velocity = vel_north
+            
         current_pos = current_pos + velocity * dt
         
     return truth_data
@@ -35,7 +51,7 @@ def add_noise(truth_data, sigma):
 if __name__ == "__main__":
     print(f"Simulating {steps} time steps...")
     
-    ground_truth = simulate_ground_truth(steps, dt, start_pos, true_velocity)
+    ground_truth = simulate_ground_truth(steps, dt, start_pos, "L")
     
     z1_readings = add_noise(ground_truth, sigma_1) 
     z2_readings = add_noise(ground_truth, sigma_2) 
