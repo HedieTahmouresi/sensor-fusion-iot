@@ -23,6 +23,7 @@ def run_project():
     
     fused_path = np.zeros((num_steps, 2))
     fused_variances = np.zeros(num_steps)
+    nis_history = np.zeros(num_steps)
 
     snapshot_step = 50 
     snapshot_data = {}
@@ -31,10 +32,11 @@ def run_project():
     for k in range(num_steps):
         z_fused, R_fused = engine.spatial_fusion(z1_readings[k], sigma_1, z2_readings[k], sigma_2)
         
-        est_pos = engine.temporal_update(z_fused, R_fused)
+        est_pos, current_nis = engine.temporal_update(z_fused, R_fused)
         
         fused_path[k] = est_pos
         fused_variances[k] = R_fused[0,0] 
+        nis_history[k] = current_nis
         
         if k == snapshot_step:
             snapshot_data = {
@@ -85,6 +87,21 @@ def run_project():
         snapshot_data["fused"], snapshot_data["sigma_fused"],
         snapshot_step
     )
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(nis_history, 'm-', linewidth=1.5, label='NIS (Normalized Innovation Squared)')
+    
+    threshold = 5.991
+    plt.axhline(y=threshold, color='r', linestyle='--', linewidth=2, label=f'95% Threshold ({threshold})')
+    
+    plt.title("Filter Consistency Check (NIS)\nSpikes indicate unmodeled maneuvers")
+    plt.xlabel("Time Step (k)")
+    plt.ylabel("NIS Value")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("result_3_nis_analysis.png")
+    print(f"   -> NIS Analysis saved to 'result_3_nis_analysis.png'")
+    plt.close()
     
     print("Done! Project execution complete.")
 

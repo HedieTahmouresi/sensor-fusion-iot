@@ -89,3 +89,26 @@ Update Estimate with $z_{fused}$:
 $$\hat{x}_{k|k} = \hat{x}_{k|k-1} + K_k (z_{fused} - H \hat{x}_{k|k-1})$$
 Update Error Covariance:
 $$P_{k|k} = (I - K_k H) P_{k|k-1}$$
+
+
+---
+
+## 5. Validation Metrics: Normalized Innovation Squared (NIS)
+*Goal: Mathematically validate the consistency of the filter and detect model mismatches (e.g., unmodeled maneuvers).*
+
+### A. The Metric ($\epsilon_{\nu}$)
+The NIS measures the statistical magnitude of the **Innovation** ($y_k = z_k - H\hat{x}_{k|k-1}$) relative to its expected covariance ($S_k$).
+$$
+\epsilon_{\nu, k} = y_k^T S_k^{-1} y_k
+$$
+
+### B. The Hypothesis Test ($\chi^2$)
+Under the assumption of Gaussian white noise, the NIS follows a Chi-Square ($\chi^2$) distribution with $n_z$ degrees of freedom (where $n_z$ is the dimension of the measurement vector).
+
+* **Degrees of Freedom ($n_z$):** 2 (We measure Position X and Position Y).
+* **Confidence Interval:** 95%.
+* **Critical Threshold:** $\chi^2_{0.95, 2} = 5.991$.
+
+### C. Interpretation
+* If $\epsilon_{\nu, k} \le 5.991$: The filter is **Consistent**. The errors are within the expected Gaussian bounds.
+* If $\epsilon_{\nu, k} > 5.991$: The filter is **Inconsistent** or Divergent. This indicates an unmodeled maneuver (e.g., sudden acceleration) or incorrect noise tuning ($Q$ or $R$ is too small).

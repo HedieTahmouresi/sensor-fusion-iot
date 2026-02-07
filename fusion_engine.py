@@ -63,12 +63,17 @@ class FusionEngine:
         y = z_fused - (self.H @ self.x)
         
         S = self.H @ self.P @ self.H.T + R_fused
+
+        S_inv = np.linalg.inv(S)
         
-        K = self.P @ self.H.T @ np.linalg.inv(S)
+        K = self.P @ self.H.T @ S_inv
+
+        nis = y.T @ S_inv @ y
         
         self.x = self.x + (K @ y)
         
         I = np.eye(4)
         self.P = (I - K @ self.H) @ self.P
         
-        return self.x[:2]
+        return self.x[:2], nis
+    
