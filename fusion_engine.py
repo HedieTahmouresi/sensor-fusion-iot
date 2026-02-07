@@ -1,7 +1,7 @@
 import numpy as np
 
 class FusionEngine:
-    def __init__(self, dt, start_pos, start_vel):
+    def __init__(self, dt, start_pos, start_vel, process_noise_std = 0.5):
         
         # State Vector x = [px, py, vx, vy]
         self.x = np.zeros(4)
@@ -25,7 +25,19 @@ class FusionEngine:
         ])
         
         # Process Noise Q (Uncertainty in Physics)
-        self.Q = np.eye(4) * 0.1
+        q = process_noise_std**2
+        dt2 = dt**2
+        dt3 = dt**3
+        dt4 = dt**4
+        
+        # The analytical solution for CV model process noise
+        # This relates position variance to velocity variance
+        self.Q = np.array([
+            [dt4/4, 0,     dt3/2, 0    ],
+            [0,     dt4/4, 0,     dt3/2],
+            [dt3/2, 0,     dt2,   0    ],
+            [0,     dt3/2, 0,     dt2  ]
+        ]) * q
 
     def spatial_fusion(self, z1, sigma1, z2, sigma2):
         var1 = sigma1**2
