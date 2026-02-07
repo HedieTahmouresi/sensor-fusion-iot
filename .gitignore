@@ -1,1 +1,6 @@
 log.md
+__pycache__/
+*.pyc
+.venv/
+*.npz
+*.png
