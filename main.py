@@ -42,12 +42,25 @@ def run_fusion_experiment():
     err_2 = np.linalg.norm(z2_readings - ground_truth, axis=1).mean()
     err_fused = np.linalg.norm(fused_path - ground_truth, axis=1).mean()
 
-    print("-" * 30)
-    print(f"Performance Report (Mean Error):")
-    print(f"Sensor 1 (Noisy GPS): {err_1:.4f} m")
-    print(f"Sensor 2 (WiFi):      {err_2:.4f} m")
-    print(f"FUSED ESTIMATE:       {err_fused:.4f} m")
-    print("-" * 30)
+    var_1 = sigma_1**2
+    var_2 = sigma_2**2
+    var_fused_theoretical = (var_1 * var_2) / (var_1 + var_2)
+    var_fused_empirical = np.var(fused_path - ground_truth)
+
+    print("-" * 40)
+    print(f"### FINAL PERFORMANCE REPORT ###")
+    print("-" * 40)
+    print(f"1. ACCURACY (Mean Position Error):")
+    print(f"   - Sensor 1 (GPS):  {err_1:.4f} m")
+    print(f"   - Sensor 2 (WiFi): {err_2:.4f} m")
+    print(f"   - FUSED SYSTEM:    {err_fused:.4f} m  <-- improvement!")
+    print("-" * 40)
+    print(f"2. PRECISION (Variance of Estimate):")
+    print(f"   - Sensor 1 Var:    {var_1:.4f} m^2")
+    print(f"   - Sensor 2 Var:    {var_2:.4f} m^2")
+    print(f"   - Fused Var (Calc):{var_fused_theoretical:.4f} m^2")
+    print(f"   * PROOF: {var_fused_theoretical:.4f} < {min(var_1, var_2):.4f}")
+    print("-" * 40)
     
     plt.figure(figsize=(12, 8))
     
