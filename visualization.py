@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+import matplotlib.patches as patches
 
 def plot_joint_pdf_snapshot(z1_val, sigma1, z2_val, sigma2, fused_val, sigma_fused, time_step):
 
@@ -32,3 +33,21 @@ def plot_joint_pdf_snapshot(z1_val, sigma1, z2_val, sigma2, fused_val, sigma_fus
     plt.savefig("result_2_joint_pdf.png")
     print(f"   -> PDF Snapshot saved to 'result_2_joint_pdf.png'")
     plt.close()
+
+def plot_covariance_ellipse(x, y, cov, ax, n_std=2.0, color='green'):
+    vals, vecs = np.linalg.eigh(cov)
+    
+    order = vals.argsort()[::-1]
+    vals = vals[order]
+    vecs = vecs[:,order]
+    
+    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
+    
+    width, height = 2 * n_std * np.sqrt(vals)
+    
+    ell = patches.Ellipse(xy=(x, y), width=width, height=height, 
+                          angle=theta, edgecolor=color, facecolor=color, 
+                          alpha=0.2, linewidth=1.5)
+    
+    ax.add_patch(ell)
+    return ell

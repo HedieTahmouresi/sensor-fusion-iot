@@ -1,9 +1,10 @@
+from matplotlib import patches
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import data_generator
 from fusion_engine import FusionEngine 
-from visualize_joint_pdf import plot_joint_pdf_snapshot
+from visualization import plot_joint_pdf_snapshot, plot_covariance_ellipse
 
 def run_project():
     print("1. GENERATING SIMULATION DATA...")
@@ -80,18 +81,37 @@ def run_project():
 
     print("5. GENERATING PLOTS...")
     
-    plt.figure(figsize=(10, 8))
-    plt.plot(ground_truth[:,0], ground_truth[:,1], 'k-', linewidth=3, label='Ground Truth')
-    plt.scatter(z1_readings[:,0], z1_readings[:,1], c='red', s=5, alpha=0.1) 
-    plt.scatter(z2_readings[:,0], z2_readings[:,1], c='blue', s=5, alpha=0.1)
-    plt.plot(path_std[:,0], path_std[:,1], 'm--', linewidth=2, label=f'Standard (Err={err_std:.2f}m)')
-    plt.plot(path_adpt[:,0], path_adpt[:,1], 'g-', linewidth=2, label=f'Adaptive (Err={err_adpt:.2f}m)')
-    plt.title(f"Trajectory Tracking: Standard vs. Adaptive")
-    plt.legend()
-    plt.grid(True)
-    plt.axis('equal')
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    ax.plot(ground_truth[:,0], ground_truth[:,1], 'k-', linewidth=3, label='Ground Truth')
+    ax.scatter(z1_readings[:,0], z1_readings[:,1], c='red', s=5, alpha=0.1) 
+    ax.scatter(z2_readings[:,0], z2_readings[:,1], c='blue', s=5, alpha=0.1)
+    ax.plot(path_std[:,0], path_std[:,1], 'm--', linewidth=2, label=f'Standard (Err={err_std:.2f}m)')
+    ax.plot(path_adpt[:,0], path_adpt[:,1], 'g-', linewidth=2, label=f'Adaptive (Err={err_adpt:.2f}m)')
+    
+    for k in range(0, num_steps, 15): 
+        x_pos = path_adpt[k, 0]
+        y_pos = path_adpt[k, 1]
+        variance = var_std[k]
+        
+        cov_matrix = np.array([
+            [variance, 0.0],
+            [0.0, variance]
+        ])
+
+        plot_covariance_ellipse(x_pos, y_pos, cov_matrix, ax, n_std=2.0, color='green')
+
+    tube_legend = patches.Patch(color='green', alpha=0.15, label='95% Reliability Tube')
+    handles, labels = ax.get_legend_handles_labels()
+    handles.append(tube_legend)
+
+    ax.set_title(f"Trajectory Reliability: Adaptive vs Standard\n(Shaded Regions = 95% Confidence)")
+    ax.legend(handles=handles)
+    ax.grid(True)
+    ax.axis('equal')
+    
     plt.savefig("result_1_trajectory.png")
-    print("   -> Map saved to 'result_1_trajectory.png'")
+    print("   -> Map with Reliability Tube saved to 'result_1_trajectory.png'")
     plt.close()
 
     plot_joint_pdf_snapshot(
