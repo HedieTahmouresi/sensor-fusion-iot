@@ -47,8 +47,7 @@ def add_noise(truth_data, sigma):
     noise = np.random.normal(0, sigma, truth_data.shape)
     return truth_data + noise
 
-
-if __name__ == "__main__":
+def generate_data():
     print(f"Simulating {steps} time steps...")
     
     ground_truth = simulate_ground_truth(steps, dt, start_pos, "L")
@@ -84,3 +83,16 @@ if __name__ == "__main__":
     plt.axis('equal')
     plt.savefig("phase2_data_visualization.png")
     print("Plot saved to 'phase2_data_visualization.png'")
+
+    return {
+        "ground_truth": ground_truth,
+        "z1": z1_readings,
+        "z2": z2_readings,
+        "sigma_1": sigma_1,
+        "sigma_2": sigma_2,
+        "dt": dt
+    }
+
+
+if __name__ == "__main__":
+    data = generate_data()
