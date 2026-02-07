@@ -53,27 +53,33 @@ class FusionEngine:
         R_fused = np.diag([var_fused, var_fused])
         
         return z_fused, R_fused
+    
+    
+    def temporal_update(self, z_fused, R_fused, adaptive=True):
         
-
-    def temporal_update(self, z_fused, R_fused):
-
-        self.x = self.F @ self.x
-        self.P = self.F @ self.P @ self.F.T + self.Q
+        x_pred = self.F @ self.x
+        P_pred = self.F @ self.P @ self.F.T + self.Q
         
-        y = z_fused - (self.H @ self.x)
-        
-        S = self.H @ self.P @ self.H.T + R_fused
+        y = z_fused - (self.H @ x_pred)
 
+        S = self.H @ P_pred @ self.H.T + R_fused
         S_inv = np.linalg.inv(S)
         
-        K = self.P @ self.H.T @ S_inv
-
         nis = y.T @ S_inv @ y
         
-        self.x = self.x + (K @ y)
+        if adaptive and nis > 5.991:
+            scale_factor = min(nis / 5.991, 10.0)
+            
+            P_pred = P_pred * scale_factor
+            
+            S = self.H @ P_pred @ self.H.T + R_fused
+            S_inv = np.linalg.inv(S)
+            
+        K = P_pred @ self.H.T @ S_inv
         
+        self.x = x_pred + (K @ y)
         I = np.eye(4)
-        self.P = (I - K @ self.H) @ self.P
+        self.P = (I - K @ self.H) @ P_pred
         
         return self.x[:2], nis
     

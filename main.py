@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
 import data_generator
 from fusion_engine import FusionEngine 
 from visualize_joint_pdf import plot_joint_pdf_snapshot
@@ -14,33 +15,42 @@ def run_project():
     sigma_1 = data["sigma_1"]
     sigma_2 = data["sigma_2"]
     dt = data["dt"]
+
+    df = 2 
+    confidence = 0.95
+    nis_threshold = stats.chi2.ppf(confidence, df)
+    
+    print(f"   -> Calculated NIS Threshold (Chi-Square): {nis_threshold:.3f}")
     
     num_steps = len(ground_truth)
     print(f"   -> Generated {num_steps} time steps.")
 
     print("2. INITIALIZING FUSION ENGINE...")
-    engine = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0])
+    engine_std = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0], nis_threshold=nis_threshold)
+    engine_adpt = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0], nis_threshold=nis_threshold)
     
-    fused_path = np.zeros((num_steps, 2))
-    fused_variances = np.zeros(num_steps)
-    nis_history = np.zeros(num_steps)
+    path_std = np.zeros((num_steps, 2))
+    nis_std = np.zeros(num_steps)
+    var_std = np.zeros(num_steps) # To track precision
 
+    path_adpt = np.zeros((num_steps, 2))
+    nis_adpt = np.zeros(num_steps)
+    
     snapshot_step = 50 
     snapshot_data = {}
 
     print("3. RUNNING FUSION LOOP...")
     for k in range(num_steps):
-        z_fused, R_fused = engine.spatial_fusion(z1_readings[k], sigma_1, z2_readings[k], sigma_2)
+        z_fused, R_fused = engine_std.spatial_fusion(z1_readings[k], sigma_1, z2_readings[k], sigma_2)
         
-        est_pos, current_nis = engine.temporal_update(z_fused, R_fused)
+        path_std[k], nis_std[k] = engine_std.temporal_update(z_fused, R_fused, adaptive=False)
+        var_std[k] = R_fused[0,0] 
         
-        fused_path[k] = est_pos
-        fused_variances[k] = R_fused[0,0] 
-        nis_history[k] = current_nis
-        
+        path_adpt[k], nis_adpt[k] = engine_adpt.temporal_update(z_fused, R_fused, adaptive=True)
+
         if k == snapshot_step:
             snapshot_data = {
-                "z1": z1_readings[k, 0],   
+                "z1": z1_readings[k, 0],
                 "z2": z2_readings[k, 0],
                 "fused": z_fused[0],       
                 "sigma_fused": np.sqrt(R_fused[0,0])
@@ -49,36 +59,45 @@ def run_project():
     print("4. CALCULATING METRICS...")
     err_1 = np.linalg.norm(z1_readings - ground_truth, axis=1).mean()
     err_2 = np.linalg.norm(z2_readings - ground_truth, axis=1).mean()
-    err_fused = np.linalg.norm(fused_path - ground_truth, axis=1).mean()
+    err_std = np.linalg.norm(path_std - ground_truth, axis=1).mean()
+    err_adpt = np.linalg.norm(path_adpt - ground_truth, axis=1).mean()
     
-    var_fused_mean = np.mean(fused_variances)
+    var_fused_mean = np.mean(var_std)
     
-    print("-" * 40)
-    print(f"Final Performance Report:")
-    print(f"ACCURACY (Mean Error):")
-    print(f"  Sensor 1 (GPS):  {err_1:.4f} m")
-    print(f"  Sensor 2 (WiFi): {err_2:.4f} m")
-    print(f"  FUSED SYSTEM:    {err_fused:.4f} m")
-    print("-" * 40)
-    print(f"PRECISION (Variance):")
-    print(f"  Sensor 1 Var:    {sigma_1**2:.4f} m^2")
-    print(f"  Sensor 2 Var:    {sigma_2**2:.4f} m^2")
-    print(f"  FUSED Var:       {var_fused_mean:.4f} m^2")
+    print("-" * 50)
+    print(f"FINAL PERFORMANCE REPORT")
+    print("-" * 50)
+    print(f"BASELINE SENSORS (Accuracy):")
+    print(f"  Sensor 1 (GPS):      {err_1:.4f} m")
+    print(f"  Sensor 2 (WiFi):     {err_2:.4f} m")
+    print("-" * 50)
+    print(f"PRECISION (Variance - Step 5 Req):")
+    print(f"  Sensor 1 Var:        {sigma_1**2:.4f} m^2")
+    print(f"  Sensor 2 Var:        {sigma_2**2:.4f} m^2")
+    print(f"  FUSED Var:           {var_fused_mean:.4f} m^2")
+    print(f"  -> Fusion is {(sigma_2**2)/var_fused_mean:.2f}x more precise than best sensor.")
+    print("-" * 50)
+    print(f"FILTER COMPARISON (Accuracy):")
+    print(f"  STANDARD Filter:     {err_std:.4f} m")
+    print(f"  ADAPTIVE Filter:     {err_adpt:.4f} m")
+    print(f"  -> Improvement:      {(err_std - err_adpt):.4f} m")
+    print("-" * 50)
     print("-" * 40)
 
     print("5. GENERATING PLOTS...")
     
     plt.figure(figsize=(10, 8))
     plt.plot(ground_truth[:,0], ground_truth[:,1], 'k-', linewidth=3, label='Ground Truth')
-    plt.scatter(z1_readings[:,0], z1_readings[:,1], c='red', s=5, alpha=0.3, label='Sensor 1')
-    plt.scatter(z2_readings[:,0], z2_readings[:,1], c='blue', s=5, alpha=0.3, label='Sensor 2')
-    plt.plot(fused_path[:,0], fused_path[:,1], 'g-', linewidth=2, label='Fused Result')
-    plt.title(f"Trajectory Tracking (Error Reduced: {err_2:.2f}m -> {err_fused:.2f}m)")
+    plt.scatter(z1_readings[:,0], z1_readings[:,1], c='red', s=5, alpha=0.1) 
+    plt.scatter(z2_readings[:,0], z2_readings[:,1], c='blue', s=5, alpha=0.1)
+    plt.plot(path_std[:,0], path_std[:,1], 'm--', linewidth=2, label=f'Standard (Err={err_std:.2f}m)')
+    plt.plot(path_adpt[:,0], path_adpt[:,1], 'g-', linewidth=2, label=f'Adaptive (Err={err_adpt:.2f}m)')
+    plt.title(f"Trajectory Tracking: Standard vs. Adaptive")
     plt.legend()
     plt.grid(True)
     plt.axis('equal')
     plt.savefig("result_1_trajectory.png")
-    print(f"   -> Trajectory Map saved to 'result_1_trajectory.png'")
+    print("   -> Map saved to 'result_1_trajectory.png'")
     plt.close()
 
     plot_joint_pdf_snapshot(
@@ -89,18 +108,30 @@ def run_project():
     )
 
     plt.figure(figsize=(10, 6))
-    plt.plot(nis_history, 'm-', linewidth=1.5, label='NIS (Normalized Innovation Squared)')
-    
-    threshold = 5.991
-    plt.axhline(y=threshold, color='r', linestyle='--', linewidth=2, label=f'95% Threshold ({threshold})')
-    
-    plt.title("Filter Consistency Check (NIS)\nSpikes indicate unmodeled maneuvers")
+    plt.plot(nis_std, 'm-', linewidth=1, label='NIS (Standard)')
+    plt.axhline(y=5.991, color='r', linestyle='--', linewidth=2, label='95% Threshold')
+    plt.title("Filter Consistency Check (NIS)\nFull Duration")
     plt.xlabel("Time Step (k)")
     plt.ylabel("NIS Value")
     plt.legend()
     plt.grid(True)
     plt.savefig("result_3_nis_analysis.png")
-    print(f"   -> NIS Analysis saved to 'result_3_nis_analysis.png'")
+    print("   -> NIS Plot saved to 'result_3_nis_analysis.png'")
+    plt.close()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(nis_std, 'm--', label='Standard NIS (High Spike)')
+    plt.plot(nis_adpt, 'g-', label='Adaptive NIS (Corrected)')
+    plt.axhline(y=5.991, color='r', linestyle='--', label='95% Threshold')
+    mid_point = num_steps // 2
+    plt.xlim(mid_point - 20, mid_point + 20)
+    plt.title("NIS Response at the Turn (Zoomed)")
+    plt.xlabel("Time Step")
+    plt.ylabel("NIS Value")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("result_4_nis_zoomed.png")
+    print("   -> NIS Zoom plot saved to 'result_4_nis_zoomed.png'")
     plt.close()
     
     print("Done! Project execution complete.")
