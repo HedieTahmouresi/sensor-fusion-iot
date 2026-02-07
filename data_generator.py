@@ -66,4 +66,5 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid(True)
     plt.axis('equal')
-    plt.show()
+    plt.savefig("phase2_data_visualization.png")
+    print("Plot saved to 'phase2_data_visualization.png'")
