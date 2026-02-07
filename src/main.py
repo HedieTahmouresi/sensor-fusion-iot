@@ -2,7 +2,7 @@ from matplotlib import patches
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
-import data_generator
+import data_generator as data_generator
 from fusion_engine import FusionEngine 
 from visualization import plot_joint_pdf_snapshot, plot_covariance_ellipse
 
@@ -93,7 +93,7 @@ def run_project():
         x_pos = path_adpt[k, 0]
         y_pos = path_adpt[k, 1]
         variance = var_std[k]
-        
+
         cov_matrix = np.array([
             [variance, 0.0],
             [0.0, variance]
@@ -110,7 +110,7 @@ def run_project():
     ax.grid(True)
     ax.axis('equal')
     
-    plt.savefig("result_1_trajectory.png")
+    plt.savefig("results/result_1_trajectory.png")
     print("   -> Map with Reliability Tube saved to 'result_1_trajectory.png'")
     plt.close()
 
@@ -129,7 +129,7 @@ def run_project():
     plt.ylabel("NIS Value")
     plt.legend()
     plt.grid(True)
-    plt.savefig("result_3_nis_analysis.png")
+    plt.savefig("results/result_3_nis_analysis.png")
     print("   -> NIS Plot saved to 'result_3_nis_analysis.png'")
     plt.close()
 
@@ -144,7 +144,7 @@ def run_project():
     plt.ylabel("NIS Value")
     plt.legend()
     plt.grid(True)
-    plt.savefig("result_4_nis_zoomed.png")
+    plt.savefig("results/result_4_nis_zoomed.png")
     print("   -> NIS Zoom plot saved to 'result_4_nis_zoomed.png'")
     plt.close()
     

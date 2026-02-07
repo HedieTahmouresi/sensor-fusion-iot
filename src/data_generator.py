@@ -81,7 +81,7 @@ def generate_data():
     plt.legend()
     plt.grid(True)
     plt.axis('equal')
-    plt.savefig("phase2_data_visualization.png")
+    plt.savefig("results/phase2_data_visualization.png")
     print("Plot saved to 'phase2_data_visualization.png'")
 
     return {

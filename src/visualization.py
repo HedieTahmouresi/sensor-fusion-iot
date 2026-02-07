@@ -30,7 +30,7 @@ def plot_joint_pdf_snapshot(z1_val, sigma1, z2_val, sigma2, fused_val, sigma_fus
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    plt.savefig("result_2_joint_pdf.png")
+    plt.savefig("results/result_2_joint_pdf.png")
     print(f"   -> PDF Snapshot saved to 'result_2_joint_pdf.png'")
     plt.close()
 
