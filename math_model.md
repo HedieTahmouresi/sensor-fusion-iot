@@ -112,3 +112,30 @@ Under the assumption of Gaussian white noise, the NIS follows a Chi-Square ($\ch
 ### C. Interpretation
 * If $\epsilon_{\nu, k} \le 5.991$: The filter is **Consistent**. The errors are within the expected Gaussian bounds.
 * If $\epsilon_{\nu, k} > 5.991$: The filter is **Inconsistent** or Divergent. This indicates an unmodeled maneuver (e.g., sudden acceleration) or incorrect noise tuning ($Q$ or $R$ is too small).
+
+---
+
+## 6. Adaptive Mechanism: NIS-Based Process Noise Scaling
+*Goal: Improve transient response during unmodeled maneuvers (e.g., sharp turns).*
+
+### A. The Concept
+The standard Kalman Filter assumes constant process noise ($Q$). During maneuvers, the actual system noise exceeds this assumption, causing lag. The Adaptive filter detects this via the NIS ($\epsilon_{\nu,k}$) and temporarily inflates the process uncertainty.
+
+### B. The Adaptation Law
+If the Normalized Innovation Squared exceeds the critical threshold ($\chi^2_{0.95}$), we apply a scaling factor $\alpha_k$ to the predicted covariance $P_{k|k-1}$ before the update step.
+
+$$
+\text{If } \epsilon_{\nu, k} > \chi^2_{critical}:
+$$
+
+1.  **Calculate Scaling Factor ($\alpha_k$):**
+    $$\alpha_k = \left( \frac{\epsilon_{\nu, k}}{\chi^2_{critical}} \right)^2$$
+    *(Squared to force an aggressive response to large errors)*.
+
+2.  **Inflate Prediction Covariance:**
+    $$\tilde{P}_{k|k-1} = \alpha_k \cdot P_{k|k-1}$$
+
+3.  **Recalculate Kalman Gain ($K_k$):**
+    $$K_k = \tilde{P}_{k|k-1} H^T (H \tilde{P}_{k|k-1} H^T + R)^{-1}$$
+
+**Effect:** Inflating $P$ increases $K$, shifting the filter's trust from the (incorrect) Physics Model to the (current) Sensor Measurements.

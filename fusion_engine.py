@@ -68,12 +68,17 @@ class FusionEngine:
         nis = y.T @ S_inv @ y
         
         if adaptive and nis > 5.991:
-            scale_factor = min(nis / 5.991, 10.0)
+            ratio = nis / 5.991
+            
+            scale_factor = ratio ** 2 
+            scale_factor = min(scale_factor, 100.0)
             
             P_pred = P_pred * scale_factor
             
             S = self.H @ P_pred @ self.H.T + R_fused
             S_inv = np.linalg.inv(S)
+            
+            nis = y.T @ S_inv @ y
             
         K = P_pred @ self.H.T @ S_inv
         

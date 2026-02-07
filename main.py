@@ -15,23 +15,17 @@ def run_project():
     sigma_1 = data["sigma_1"]
     sigma_2 = data["sigma_2"]
     dt = data["dt"]
-
-    df = 2 
-    confidence = 0.95
-    nis_threshold = stats.chi2.ppf(confidence, df)
-    
-    print(f"   -> Calculated NIS Threshold (Chi-Square): {nis_threshold:.3f}")
     
     num_steps = len(ground_truth)
     print(f"   -> Generated {num_steps} time steps.")
 
     print("2. INITIALIZING FUSION ENGINE...")
-    engine_std = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0], nis_threshold=nis_threshold)
-    engine_adpt = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0], nis_threshold=nis_threshold)
+    engine_std = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0])
+    engine_adpt = FusionEngine(dt, start_pos=ground_truth[0], start_vel=[0,0])
     
     path_std = np.zeros((num_steps, 2))
     nis_std = np.zeros(num_steps)
-    var_std = np.zeros(num_steps) # To track precision
+    var_std = np.zeros(num_steps) 
 
     path_adpt = np.zeros((num_steps, 2))
     nis_adpt = np.zeros(num_steps)
